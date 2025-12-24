@@ -57,10 +57,15 @@ make run       # run in QEMU (uses -serial stdio)
 
 ## Third-party tools / libraries 📦
 
-- flanterm (framebuffer text backend) — https://codeberg.org/Mintsuki/Flanterm
-- printf (tiny printf implementation) — https://github.com/mpaland/printf
+The following third-party components are vendored directly into the repository.
+They are intentionally not included as git submodules to ensure build
+reproducibility and offline availability.
 
-These are included (as submodules or vendored code) for simple console / framebuffer output.
+- flanterm — framebuffer text backend (vendored)
+  https://codeberg.org/Mintsuki/Flanterm
+
+- printf — freestanding printf-style formatting library (vendored)
+  https://github.com/mpaland/printf
 
 ---
 
