@@ -69,6 +69,14 @@ reproducibility and offline availability.
 
 ---
 
+## Design philosophy
+
+TitanBoot64 does not replace Limine.  
+Instead, it mirrors Limine’s *kernel-facing semantics* while remaining compatible
+with GRUB and Multiboot2, lowering the barrier for testing kernels on real hardware.
+
+---
+
 ## Status & TODO ✍️
 
 - Implemented: Multiboot2 parsing (framebuffer, memory map), HHDM + identity map for 0..4 GiB, framebuffer write/debug, printing memory map.
