@@ -73,5 +73,3 @@ These are included (as submodules or vendored code) for simple console / framebu
   - Add more drivers (keyboard, PCI, ACPI parsing)
 
 ---
-
-If you'd like, I can also add an expanding developer guide (how the page tables are built, how to add modules, or a quick dev checklist). Want that next? 💡
