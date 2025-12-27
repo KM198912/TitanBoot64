@@ -21,7 +21,7 @@ static void print_memory_map(void) {
         return;
     }
     uint64_t total_usable = 0;
-    struct multiboot_tag *tag = (struct multiboot_tag*)PHYS_TO_VIRT(mb + 8);
+    struct multiboot_tag *tag = (struct multiboot_tag*)(mb + 8);
 
     /* compute tag sizes using padded tag sizes and include the end tag */
     uint32_t computed = 0;
@@ -33,8 +33,8 @@ static void print_memory_map(void) {
         if (t->type == MULTIBOOT_TAG_TYPE_END) break;
     }
     /* optional warning for mismatches */
-    if (computed != ((*(uint32_t*)PHYS_TO_VIRT(mb)) - 8)) {
-        kprintf("WARNING: tag sizes mismatch by %d bytes\n", (int)((*(uint32_t*)PHYS_TO_VIRT(mb)) - 8 - computed));
+    if (computed != ((*(uint32_t*)(mb)) - 8)) {
+        kprintf("WARNING: tag sizes mismatch by %d bytes\n", (int)((*(uint32_t*)mb) - 8 - computed));
     }
 
     for (; tag->type != MULTIBOOT_TAG_TYPE_END; tag = (struct multiboot_tag*)((uint8_t*)tag + ((tag->size + 7) & ~7))) {

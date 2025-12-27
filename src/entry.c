@@ -25,11 +25,11 @@ void _start(uint64_t mb_addr, uint64_t hhdm_base) {
     TitanBootInfo.mb2_addr  = mb_addr;
     TitanBootInfo.hhdm_base = hhdm_base;
     enable_sse();
-    uint32_t total_size = *(uint32_t*)PHYS_TO_VIRT(mb_addr);
+    uint32_t total_size = *(uint32_t*)mb_addr;
 
     struct multiboot_tag_framebuffer* fb_tag = NULL;
 
-    uintptr_t base = (uintptr_t)PHYS_TO_VIRT(mb_addr);
+    uintptr_t base = (uintptr_t)mb_addr;
     uintptr_t end  = base + total_size;
 
     for (struct multiboot_tag* tag = (struct multiboot_tag*)(base + 8);
@@ -64,7 +64,7 @@ void _start(uint64_t mb_addr, uint64_t hhdm_base) {
         TitanBootInfo.framebuffer.red_shift   = fb_tag->framebuffer_red_field_position;
         TitanBootInfo.framebuffer.blue_shift  = fb_tag->framebuffer_blue_field_position;
 
-        volatile uint32_t* fb = (volatile uint32_t*)PHYS_TO_VIRT(fb_addr);
+        volatile uint32_t* fb = (volatile uint32_t*)fb_addr;
         uint32_t stride = TitanBootInfo.framebuffer.pitch / 4;
         //find the ACPI_PTR
         for (struct multiboot_tag* tag = (struct multiboot_tag*)(base + 8);
