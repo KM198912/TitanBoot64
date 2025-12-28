@@ -124,3 +124,14 @@ with GRUB and Multiboot2, lowering the barrier for testing kernels on real hardw
 - Thanks to the OSDev Wiki for its extensive documentation on Multiboot2 and x86_64 booting.
 
 ---
+
+## Last Notes
+
+- TitanBoot64 DOES NOT intend to replace Limine, or any other bootloader.
+- It builds upon a working and battle-tested bootloader (GRUB) to provide a familiar environment for hobby OS developers.
+- It aims to simplify kernel testing and development without the need for complex bootloader setups.
+- Titanboot64 aswell enables SSE early, demonstrating floating-point operations in the kernel.
+- While the OSDev wiki says, we aint ready for this, i personally think , by the time you consider this project, you are ready enough to handle the pitfalls of using SSE in kernel mode, and you know enough about osdev to understand the ASM code and what it does behind the scenes, if not, you are free to remove the SSE code in entry.c and read up on it more, its purely optional, however, if you do disable SSE, set the CFLAGS to -mno-sse and -mno-sse2 to avoid any accidental usage of SSE instructions, and aswell add the -DPRINTF_DISABLE_SUPPORT_FLOAT to the CFLAGS to avoid printf trying to use floating point support.
+- And Lastly, it is a fun project to learn about low-level OS development! Enjoy! 🚀
+
+---

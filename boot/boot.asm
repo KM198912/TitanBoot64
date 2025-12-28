@@ -5,7 +5,7 @@
 ;  - Low identity map exists for 0..4GiB (2MiB pages)
 ;  - HHDM map exists: virt = HHDM_BASE + phys for phys 0..4GiB (2MiB pages)
 ;  - Framebuffer MMIO typically <4GiB is already mapped via identity+HHDM
-
+;  - Todo: 16-bit AP Trampoline for SMP Bringup
 BITS 32
 
 %define MB2_MAGIC 0xE85250D6
@@ -72,6 +72,14 @@ align 16
 stack_bottom:
     resb 16384
 stack_top:
+
+; Per-AP stacks (each AP gets its own stack to avoid clobbering BSP stack)
+%define AP_STACK_SIZE 32768            ; 32 KiB per AP, generous per AP, but depending on whats loaded, might be needed
+%define MAX_APS 1024                ; Max supported APs, threadripper might want this ..... (hobby kernel on a monster? get real)
+
+align 4096
+ap_stacks:
+    resb AP_STACK_SIZE * MAX_APS
 
 align 4096
 global pml4, pdpt_low, pdpt_kern
@@ -348,6 +356,110 @@ long_mode_start:
     hlt
     jmp .hang
 
+
+; ----------------------------
+; AP startup trampoline (16-bit -> protected -> long mode)
+; To use: copy the bytes between `ap_trampoline_start` and `ap_trampoline_end`
+; to a low physical address (e.g., 0x7000) and issue INIT/SIPI to AP with that vector.
+SECTION .boot
+align 16
+global ap_trampoline_start, ap_trampoline_end
+ap_trampoline_start:
+    ; 16-bit real mode entry
+    BITS 16
+    cli
+    xor ax, ax
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    mov sp, 0x4000
+    ; Load GDT using 32-bit operand encoding so relocations can address full symbol
+    BITS 32
+    lgdt [gdt64.ptr]
+    BITS 16
+    ; Enter protected mode
+    mov eax, cr0
+    or  eax, 1
+    mov cr0, eax
+    ; Far jump to 32-bit protected-mode entry (encode as 32-bit offset)
+    BITS 32
+    jmp 0x08:ap_trampoline_pm
+    BITS 16
+
+; 32-bit protected mode entry point
+BITS 32
+ap_trampoline_pm:
+    ; Load PML4 physical address into CR3
+    mov eax, pml4
+    mov cr3, eax
+
+    ; Enable PAE (required for long mode)
+    mov eax, cr4
+    or  eax, (1 << 5)
+    mov cr4, eax
+
+    ; Enable Long Mode (LME)
+    mov ecx, 0xC0000080
+    rdmsr
+    or  eax, (1 << 8)
+    wrmsr
+
+    ; Enable paging (PG)
+    mov eax, cr0
+    or  eax, (1 << 31)
+    mov cr0, eax
+
+    ; Far jump to 64-bit entry (GDT code selector = 0x08)
+    jmp 0x08:ap_trampoline_64_entry
+
+; 64-bit long mode entry
+BITS 64
+ap_trampoline_64_entry:
+    ; Setup data segments
+    mov ax, 0x10
+    mov ds, ax
+    mov es, ax
+    mov ss, ax
+    xor rax, rax
+    mov fs, ax
+    mov gs, ax
+
+    ; Setup stack: choose per-CPU stack based on local APIC ID
+    ; Read IA32_APIC_BASE MSR (0x1B) to find LAPIC physical base
+    mov ecx, 0x1B
+    rdmsr
+    ; rdx:rax -> physical apic base
+    mov rbx, rdx
+    shl rbx, 32
+    or  rbx, rax
+    and rbx, 0xFFFFF000
+    mov rax, HHDM_BASE
+    add rbx, rax
+    ; read APIC ID from LAPIC ID register (offset 0x20, ID in bits 24..31)
+    mov eax, dword [rbx + 0x20]
+    shr eax, 24
+    and eax, 0xFF
+    ; EAX now contains the APIC ID (writing to EAX zero-extends RAX)
+    ; multiply by AP_STACK_SIZE (16384) using shift (<< 14) on RAX
+    sal rax, 14
+    mov ebx, stack_top
+    add ebx, ap_stacks - stack_top
+    mov rcx, HHDM_BASE
+    add rbx, rcx
+    add rax, rbx
+    ; point to top of stack for that AP
+    add rax, AP_STACK_SIZE
+    mov rsp, rax
+
+    ; TODO: call kernel-provided `ap_entry` in the future (hook point).
+    ; For now, halt the AP after landing in long mode.
+    cli
+    hlt
+    jmp $
+ap_trampoline_end:
+
+global ap_trampoline_size
+ap_trampoline_size: dq ap_trampoline_end - ap_trampoline_start
 
 ; Symbols provided by linker (physical addresses for MB2 address tag)
 extern _kernel_load_end

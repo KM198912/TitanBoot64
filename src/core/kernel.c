@@ -3,6 +3,11 @@
 #include <kernel/kprintf.h>
 #include <common/multiboot2.h>
 
+/* AP trampoline symbols provided by `boot/boot.asm` */
+extern const uint8_t ap_trampoline_start[];
+extern const uint8_t ap_trampoline_end[];
+extern const uint64_t ap_trampoline_size;
+
 const char* memory_type_to_string(uint32_t type) {
     switch (type) {
         case MULTIBOOT_MEMORY_AVAILABLE: return "Available";
@@ -67,7 +72,18 @@ void kernel_main()
     //print acpi address
     kprintf("ACPI RSDP pointer: %p\n", TitanBootInfo.acpi_ptr);
     kprintf("Kernel size: %zu bytes (%.2f MB)\n", TitanBootInfo.kernel_size, (double)TitanBootInfo.kernel_size / (1024.0 * 1024.0));
+    //Floating point tests for SSE Demonstration
+    float a = 5.5f;
+    float b = 2.0f;
+    float c = a * b + (a / b) - (a - b);
+    kprintf("SSE Test: %.2f * %.2f + (%.2f / %.2f) - (%.2f - %.2f) = %.2f\n", a, b, a, b, a, b, c);
+
+    /* Print AP trampoline information (for debugging) */
+    kprintf("AP trampoline: start=%p end=%p size=%llu bytes\n",
+            (void*)ap_trampoline_start, (void*)ap_trampoline_end, (unsigned long long)ap_trampoline_size);
+    kprintf("Suggested destination for copy: phys=0x7000 (SIPI vector = %u)\n", (unsigned)(0x7000 >> 12));
 }
+
 void kernel_run()
 {
     // Kernel main loop
